@@ -10,24 +10,16 @@ pub mod training;
 use crate::app::{App, Screen};
 use egui::{Color32, Context, RichText};
 
-// ── パステルカラーパレット ────────────────────────────────────────────────────
+// ── グレースケールパレット ───────────────────────────────────────────────────
 
-/// カロリー表示色（ピーチオレンジ）
-pub const KCAL_COLOR: Color32 = Color32::from_rgb(244, 162, 97);
-/// タンパク質（P）表示色（ミントグリーン）
-pub const P_COLOR: Color32 = Color32::from_rgb(82, 183, 136);
-/// 脂質（F）表示色（コーラル）
-pub const F_COLOR: Color32 = Color32::from_rgb(240, 128, 128);
-/// 炭水化物（C）表示色（スカイブルー）
-pub const C_COLOR: Color32 = Color32::from_rgb(107, 174, 214);
-/// メインアクセント色（コーラルピンク）
-pub const ACCENT: Color32 = Color32::from_rgb(232, 121, 160);
-/// 補助テキスト色（くすみ紫）
-pub const MUTED: Color32 = Color32::from_rgb(160, 140, 175);
-/// カード背景色（白）
-pub const CARD_BG: Color32 = Color32::WHITE;
-/// 本文テキスト色（深紫）
-pub const TEXT_DARK: Color32 = Color32::from_rgb(60, 40, 70);
+pub const KCAL_COLOR: Color32 = Color32::from_rgb(78, 84, 90);
+pub const P_COLOR: Color32 = Color32::from_rgb(102, 108, 114);
+pub const F_COLOR: Color32 = Color32::from_rgb(126, 131, 137);
+pub const C_COLOR: Color32 = Color32::from_rgb(150, 155, 160);
+pub const ACCENT: Color32 = Color32::from_rgb(68, 74, 80);
+pub const MUTED: Color32 = Color32::from_rgb(112, 118, 124);
+pub const CARD_BG: Color32 = Color32::from_rgb(252, 252, 252);
+pub const TEXT_DARK: Color32 = Color32::from_rgb(30, 33, 36);
 
 // ── ルート描画 ────────────────────────────────────────────────────────────────
 
@@ -51,20 +43,20 @@ fn draw_top_bar(app: &App, ctx: &Context) {
     egui::TopBottomPanel::top("top_bar")
         .frame(
             egui::Frame::none()
-                .fill(Color32::from_rgb(255, 245, 250))
+                .fill(Color32::from_rgb(243, 244, 245))
                 .inner_margin(egui::Margin::symmetric(16.0, 10.0)),
         )
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(
-                    RichText::new("🌸 Diet Tracker")
+                    RichText::new("FitNote")
                         .size(18.0)
                         .color(ACCENT)
                         .strong(),
                 );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if let Some((msg, _)) = &app.status {
-                        ui.colored_label(Color32::from_rgb(100, 180, 120), msg);
+                        ui.colored_label(Color32::from_rgb(84, 94, 102), msg);
                     }
                 });
             });
@@ -75,7 +67,7 @@ fn draw_tab_bar(app: &mut App, ctx: &Context) {
     egui::TopBottomPanel::top("tab_bar")
         .frame(
             egui::Frame::none()
-                .fill(Color32::from_rgb(252, 242, 250))
+                .fill(Color32::from_rgb(236, 238, 240))
                 .inner_margin(egui::Margin::symmetric(12.0, 0.0)),
         )
         .show(ctx, |ui| {
@@ -125,7 +117,7 @@ pub fn nutrient_bar(ui: &mut egui::Ui, label: &str, value: f64, max: f64, color:
             egui::Sense::hover(),
         );
         // バー背景
-        ui.painter().rect_filled(rect, 5.0, Color32::from_rgb(235, 225, 245));
+        ui.painter().rect_filled(rect, 5.0, Color32::from_rgb(226, 229, 232));
         // バー塗り
         if max > 0.0 {
             let fill_ratio = (value / max).min(1.0) as f32;
@@ -144,7 +136,7 @@ pub fn card(ui: &mut egui::Ui, add_contents: impl FnOnce(&mut egui::Ui)) {
         .fill(CARD_BG)
         .rounding(egui::Rounding::same(10.0))
         .inner_margin(egui::Margin::same(14.0))
-        .stroke(egui::Stroke::new(0.8, Color32::from_rgb(230, 215, 240)))
+        .stroke(egui::Stroke::new(0.8, Color32::from_rgb(214, 218, 222)))
         .show(ui, add_contents);
 }
 

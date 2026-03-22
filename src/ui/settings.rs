@@ -50,7 +50,7 @@ fn draw_goals_card(app: &mut App, ui: &mut Ui) {
         ui.add_space(6.0);
 
         // 目標体重
-        setting_row(ui, "目標体重", Color32::from_rgb(180, 130, 220), |ui| {
+        setting_row(ui, "目標体重", Color32::from_rgb(92, 98, 104), |ui| {
             ui.add(
                 egui::TextEdit::singleline(&mut app.target_weight_input)
                     .desired_width(90.0)
@@ -120,7 +120,7 @@ fn draw_profile_card(app: &mut App, ui: &mut Ui) {
                             .size(12.0)
                             .color(if is_active { Color32::WHITE } else { MUTED }),
                     )
-                    .fill(if is_active { ACCENT } else { Color32::from_rgb(245, 238, 252) })
+                    .fill(if is_active { ACCENT } else { Color32::from_rgb(232, 235, 238) })
                     .rounding(egui::Rounding::same(20.0)),
                 );
                 if btn.clicked() {
@@ -172,7 +172,7 @@ fn draw_bmi_reference(app: &App, ui: &mut Ui) {
     let h2  = h_m * h_m;
 
     egui::Frame::none()
-        .fill(Color32::from_rgb(250, 245, 255))
+        .fill(Color32::from_rgb(241, 243, 245))
         .rounding(egui::Rounding::same(8.0))
         .inner_margin(egui::Margin::same(10.0))
         .show(ui, |ui| {
@@ -220,10 +220,10 @@ fn draw_bmi_reference(app: &App, ui: &mut Ui) {
 
 fn bmi_category(bmi: f64) -> (&'static str, Color32) {
     match bmi {
-        b if b < 18.5 => ("低体重", Color32::from_rgb(107, 174, 214)),
-        b if b < 25.0 => ("普通体重", Color32::from_rgb(82, 183, 136)),
-        b if b < 30.0 => ("過体重", Color32::from_rgb(244, 162, 97)),
-        _             => ("肥満", Color32::from_rgb(220, 80, 60)),
+        b if b < 18.5 => ("低体重", Color32::from_rgb(146, 152, 158)),
+        b if b < 25.0 => ("普通体重", Color32::from_rgb(94, 100, 106)),
+        b if b < 30.0 => ("過体重", Color32::from_rgb(118, 124, 130)),
+        _             => ("肥満", Color32::from_rgb(70, 74, 78)),
     }
 }
 

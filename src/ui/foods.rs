@@ -181,8 +181,8 @@ fn draw_food_list_card(app: &mut App, ui: &mut Ui) {
                     if ui
                         .add(
                             egui::Button::new(RichText::new("編集").size(10.0).color(MUTED))
-                                .fill(Color32::from_rgb(245, 238, 252))
-                                .stroke(egui::Stroke::new(0.5, Color32::from_rgb(220, 200, 240)))
+                                .fill(Color32::from_rgb(232, 235, 238))
+                                .stroke(egui::Stroke::new(0.5, Color32::from_rgb(213, 217, 221)))
                                 .rounding(egui::Rounding::same(6.0)),
                         )
                         .clicked()

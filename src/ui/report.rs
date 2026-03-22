@@ -33,13 +33,13 @@ pub fn draw(app: &mut App, ui: &mut Ui) {
 
 fn draw_sunday_notice(ui: &mut Ui) {
     egui::Frame::none()
-        .fill(Color32::from_rgb(255, 240, 248))
+        .fill(Color32::from_rgb(238, 240, 242))
         .rounding(egui::Rounding::same(10.0))
         .inner_margin(egui::Margin::same(12.0))
-        .stroke(egui::Stroke::new(0.8, Color32::from_rgb(240, 190, 215)))
+        .stroke(egui::Stroke::new(0.8, Color32::from_rgb(208, 212, 216)))
         .show(ui, |ui| {
             ui.label(
-                RichText::new("🌸 今日は日曜日です。今週の振り返りレポートを生成しましょう！")
+                RichText::new("今日は日曜日です。今週の振り返りレポートを生成しましょう。")
                     .size(12.0)
                     .color(ACCENT),
             );
@@ -147,7 +147,7 @@ fn draw_ai_coach_card(app: &mut App, ui: &mut Ui) {
             ui.separator();
             ui.add_space(4.0);
             egui::Frame::none()
-                .fill(Color32::from_rgb(255, 248, 252))
+                .fill(Color32::from_rgb(243, 244, 246))
                 .rounding(egui::Rounding::same(8.0))
                 .inner_margin(egui::Margin::same(10.0))
                 .show(ui, |ui| {
@@ -193,7 +193,7 @@ fn draw_history_section(app: &mut App, ui: &mut Ui) {
                         .color(if is_expanded { ACCENT } else { TEXT_DARK }),
                 )
                 .fill(if is_expanded {
-                    Color32::from_rgb(255, 240, 250)
+                    Color32::from_rgb(238, 240, 242)
                 } else {
                     Color32::TRANSPARENT
                 })
@@ -206,7 +206,7 @@ fn draw_history_section(app: &mut App, ui: &mut Ui) {
 
             if is_expanded {
                 egui::Frame::none()
-                    .fill(Color32::from_rgb(255, 248, 252))
+                    .fill(Color32::from_rgb(243, 244, 246))
                     .rounding(egui::Rounding::same(8.0))
                     .inner_margin(egui::Margin::same(10.0))
                     .show(ui, |ui| {

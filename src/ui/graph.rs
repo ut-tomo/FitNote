@@ -81,7 +81,7 @@ fn range_button(ui: &mut Ui, app: &App, days: u32) -> egui::Response {
                 .size(11.0)
                 .color(if is_active { Color32::WHITE } else { MUTED }),
         )
-        .fill(if is_active { ACCENT } else { Color32::from_rgb(32, 36, 54) })
+        .fill(if is_active { ACCENT } else { Color32::from_rgb(230, 233, 236) })
         .rounding(egui::Rounding::same(14.0)),
     )
 }
@@ -115,7 +115,7 @@ fn draw_weight_graph(ui: &mut Ui, data: &[(String, f64)]) {
     let (rect, _) = ui.allocate_exact_size(desired, egui::Sense::hover());
     let painter = ui.painter_at(rect);
 
-    painter.rect_filled(rect, 8.0, Color32::from_rgb(248, 242, 255));
+    painter.rect_filled(rect, 8.0, Color32::from_rgb(244, 245, 246));
 
     if data.is_empty() {
         painter.text(
@@ -159,7 +159,7 @@ fn draw_weight_graph(ui: &mut Ui, data: &[(String, f64)]) {
                 Pos2::new(rect.left() + pad_x, y),
                 Pos2::new(rect.right() - pad_x, y),
             ],
-            Stroke::new(0.5, Color32::from_rgb(210, 195, 230)),
+            Stroke::new(0.5, Color32::from_rgb(208, 212, 216)),
         );
         painter.text(
             Pos2::new(rect.left() + pad_x - 2.0, y),
@@ -184,7 +184,7 @@ fn draw_weight_graph(ui: &mut Ui, data: &[(String, f64)]) {
         painter.add(egui::epaint::PathShape {
             points: vec![p0, p1, b1, b0],
             closed: true,
-            fill: Color32::from_rgba_premultiplied(232, 121, 160, 25),
+            fill: Color32::from_rgba_premultiplied(68, 74, 80, 20),
             stroke: egui::epaint::PathStroke::NONE,
         });
     }

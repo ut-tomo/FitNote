@@ -120,7 +120,7 @@ fn draw_today(app: &mut App, ui: &mut Ui) {
                                         .size(11.0)
                                         .color(if is_sel { Color32::WHITE } else { TEXT_DARK }),
                                 )
-                                .fill(if is_sel { ACCENT } else { Color32::from_rgb(240, 235, 250) })
+                                .fill(if is_sel { ACCENT } else { Color32::from_rgb(232, 235, 238) })
                                 .rounding(egui::Rounding::same(6.0))
                                 .min_size(egui::vec2(80.0, 26.0)),
                             );
@@ -525,7 +525,7 @@ fn draw_analysis(app: &mut App, ui: &mut Ui) {
                                         .size(11.0)
                                         .color(if is_sel { Color32::WHITE } else { TEXT_DARK }),
                                 )
-                                .fill(if is_sel { ACCENT } else { Color32::from_rgb(240, 235, 250) })
+                                .fill(if is_sel { ACCENT } else { Color32::from_rgb(232, 235, 238) })
                                 .rounding(egui::Rounding::same(6.0))
                                 .min_size(egui::vec2(80.0, 26.0)),
                             );
@@ -591,7 +591,7 @@ fn draw_progress_graph(ui: &mut Ui, data: &[(String, f64)]) {
     let (rect, _) = ui.allocate_exact_size(desired, egui::Sense::hover());
     let painter = ui.painter_at(rect);
 
-    painter.rect_filled(rect, 8.0, Color32::from_rgb(248, 242, 255));
+    painter.rect_filled(rect, 8.0, Color32::from_rgb(244, 245, 246));
 
     if data.is_empty() {
         return;
@@ -620,7 +620,7 @@ fn draw_progress_graph(ui: &mut Ui, data: &[(String, f64)]) {
         let w = min_w + ratio as f64 * range;
         painter.line_segment(
             [Pos2::new(rect.left() + pad_x, y), Pos2::new(rect.right() - pad_x, y)],
-            Stroke::new(0.5, Color32::from_rgb(210, 195, 230)),
+            Stroke::new(0.5, Color32::from_rgb(208, 212, 216)),
         );
         painter.text(
             Pos2::new(rect.left() + pad_x - 2.0, y),
@@ -641,7 +641,7 @@ fn draw_progress_graph(ui: &mut Ui, data: &[(String, f64)]) {
         painter.add(egui::epaint::PathShape {
             points: vec![p0, p1, b1, b0],
             closed: true,
-            fill: Color32::from_rgba_premultiplied(232, 121, 160, 25),
+            fill: Color32::from_rgba_premultiplied(68, 74, 80, 20),
             stroke: egui::epaint::PathStroke::NONE,
         });
     }

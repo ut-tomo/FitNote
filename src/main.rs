@@ -18,12 +18,12 @@ fn main() -> eframe::Result {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([760.0, 720.0])
             .with_min_inner_size([620.0, 580.0])
-            .with_title("Diet Tracker"),
+            .with_title("FitNote"),
         ..Default::default()
     };
 
     eframe::run_native(
-        "Diet Tracker",
+        "FitNote",
         options,
         Box::new(|cc| {
             setup_fonts(&cc.egui_ctx);
@@ -55,21 +55,18 @@ fn setup_fonts(ctx: &egui::Context) {
     ctx.set_fonts(fonts);
 }
 
-/// ライト＋パステルテーマ。クリーム背景にコーラルピンクのアクセント。
+/// ライトなグレースケールテーマ。
 fn setup_style(ctx: &egui::Context) {
     let mut visuals = egui::Visuals::light();
 
-    // ── 背景色の階層 ─────────────────────────────────────────────────────
-    let bg_deep   = egui::Color32::from_rgb(254, 249, 255); // #fef9ff クリーム
-    let bg_panel  = egui::Color32::from_rgb(248, 242, 252); // #f8f2fc 薄ラベンダー
-    let bg_widget = egui::Color32::from_rgb(237, 229, 248); // #ede5f8 淡紫
-
-    // ── テキスト色 ────────────────────────────────────────────────────────
-    let text_primary = egui::Color32::from_rgb(60, 40, 70);   // 深紫
-    let text_muted   = egui::Color32::from_rgb(160, 140, 175); // くすみ紫
-
-    // ── アクセント色（コーラルピンク） ────────────────────────────────────
-    let accent = egui::Color32::from_rgb(232, 121, 160); // #e879a0
+    let bg_deep = egui::Color32::from_rgb(238, 239, 241);
+    let bg_panel = egui::Color32::from_rgb(246, 247, 248);
+    let bg_widget = egui::Color32::from_rgb(232, 234, 236);
+    let text_primary = egui::Color32::from_rgb(34, 36, 38);
+    let text_muted = egui::Color32::from_rgb(112, 118, 124);
+    let accent = egui::Color32::from_rgb(72, 78, 84);
+    let border = egui::Color32::from_rgb(205, 209, 214);
+    let hover = egui::Color32::from_rgb(222, 225, 228);
 
     visuals.panel_fill       = bg_panel;
     visuals.window_fill      = bg_panel;
@@ -80,12 +77,12 @@ fn setup_style(ctx: &egui::Context) {
     visuals.widgets.noninteractive.fg_stroke = egui::Stroke::new(0.5, text_muted);
     visuals.widgets.inactive.bg_fill         = bg_widget;
     visuals.widgets.inactive.fg_stroke       = egui::Stroke::new(0.5, text_primary);
-    visuals.widgets.hovered.bg_fill          = egui::Color32::from_rgb(255, 220, 235);
+    visuals.widgets.hovered.bg_fill          = hover;
     visuals.widgets.hovered.fg_stroke        = egui::Stroke::new(1.0, accent);
     visuals.widgets.active.bg_fill           = accent;
     visuals.widgets.active.fg_stroke         = egui::Stroke::new(1.0, egui::Color32::WHITE);
 
-    visuals.selection.bg_fill = egui::Color32::from_rgba_premultiplied(232, 121, 160, 50);
+    visuals.selection.bg_fill = egui::Color32::from_rgba_premultiplied(72, 78, 84, 40);
     visuals.selection.stroke  = egui::Stroke::new(1.0, accent);
 
     // 全ウィジェットに角丸
@@ -96,9 +93,8 @@ fn setup_style(ctx: &egui::Context) {
     visuals.widgets.hovered.rounding        = rounding;
     visuals.widgets.active.rounding         = rounding;
 
-    // 枠線を薄く
-    visuals.widgets.noninteractive.bg_stroke = egui::Stroke::new(0.5, egui::Color32::from_rgb(220, 205, 235));
-    visuals.widgets.inactive.bg_stroke       = egui::Stroke::new(0.5, egui::Color32::from_rgb(220, 205, 235));
+    visuals.widgets.noninteractive.bg_stroke = egui::Stroke::new(0.8, border);
+    visuals.widgets.inactive.bg_stroke       = egui::Stroke::new(0.8, border);
 
     ctx.set_visuals(visuals);
 

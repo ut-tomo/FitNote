@@ -117,7 +117,7 @@ fn draw_slot_selector(app: &mut App, ui: &mut Ui) {
                 .fill(if is_active {
                     ACCENT
                 } else {
-                    Color32::from_rgb(245, 238, 252)
+                    Color32::from_rgb(232, 235, 238)
                 })
                 .rounding(egui::Rounding::same(20.0)),
             );
@@ -181,7 +181,7 @@ fn draw_food_grid(app: &mut App, ui: &mut Ui) {
                     let (bg, text_color) = if is_selected {
                         (ACCENT, Color32::WHITE)
                     } else {
-                        (Color32::from_rgb(248, 240, 255), TEXT_DARK)
+                        (Color32::from_rgb(243, 244, 246), TEXT_DARK)
                     };
 
                     let btn = egui::Frame::none()
@@ -189,7 +189,7 @@ fn draw_food_grid(app: &mut App, ui: &mut Ui) {
                         .rounding(egui::Rounding::same(10.0))
                         .stroke(egui::Stroke::new(
                             if is_selected { 0.0 } else { 0.8 },
-                            Color32::from_rgb(220, 200, 240),
+                            Color32::from_rgb(213, 217, 221),
                         ))
                         .inner_margin(egui::Margin::symmetric(8.0, 6.0))
                         .show(ui, |ui| {
@@ -206,7 +206,7 @@ fn draw_food_grid(app: &mut App, ui: &mut Ui) {
                                     RichText::new(format!("{:.0}kcal", food.kcal_per_unit))
                                         .size(10.0)
                                         .color(if is_selected {
-                                            Color32::from_rgb(255, 230, 240)
+                                            Color32::from_rgb(229, 232, 235)
                                         } else {
                                             KCAL_COLOR
                                         }),
@@ -219,7 +219,7 @@ fn draw_food_grid(app: &mut App, ui: &mut Ui) {
                                     ))
                                     .size(9.0)
                                     .color(if is_selected {
-                                        Color32::from_rgb(240, 220, 250)
+                                        Color32::from_rgb(212, 216, 220)
                                     } else {
                                         MUTED
                                     }),
@@ -252,7 +252,7 @@ fn draw_amount_input(app: &mut App, ui: &mut Ui) {
     let unit_label = app.selected_food.as_ref().map(|f| f.unit.as_str()).unwrap_or("g");
 
     egui::Frame::none()
-        .fill(Color32::from_rgb(255, 245, 252))
+        .fill(Color32::from_rgb(240, 242, 244))
         .rounding(egui::Rounding::same(8.0))
         .inner_margin(egui::Margin::same(8.0))
         .show(ui, |ui| {
