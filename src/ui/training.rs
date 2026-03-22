@@ -10,6 +10,7 @@ use crate::domain::{Exercise, ExerciseDraft, TrainingSet};
 use crate::ui::{card, primary_button, ACCENT, MUTED, TEXT_DARK};
 
 const MUSCLE_GROUPS: &[&str] = &["", "胸", "背中", "脚", "肩", "腕", "腹", "その他"];
+const LABEL_WIDTH: f32 = 56.0;
 
 pub fn draw(app: &mut App, ui: &mut Ui) {
     draw_sub_tab_bar(app, ui);
@@ -261,16 +262,23 @@ fn draw_exercises(app: &mut App, ui: &mut Ui) {
             };
 
             ui.horizontal(|ui| {
-                ui.label(RichText::new("名前:").size(12.0).color(MUTED));
+                ui.add_sized(
+                    [LABEL_WIDTH, ui.spacing().interact_size.y],
+                    egui::Label::new(RichText::new("名前:").size(12.0).color(MUTED)),
+                );
                 ui.add(
                     egui::TextEdit::singleline(name)
-                        .desired_width(160.0)
+                        .desired_width(320.0)
                         .hint_text("ベンチプレス"),
                 );
             });
             ui.horizontal(|ui| {
-                ui.label(RichText::new("部位:").size(12.0).color(MUTED));
+                ui.add_sized(
+                    [LABEL_WIDTH, ui.spacing().interact_size.y],
+                    egui::Label::new(RichText::new("部位:").size(12.0).color(MUTED)),
+                );
                 egui::ComboBox::from_id_salt("muscle_group_combo")
+                    .width(190.0)
                     .selected_text(if muscle_group.is_empty() { "未設定" } else { muscle_group.as_str() })
                     .show_ui(ui, |ui| {
                         for &grp in MUSCLE_GROUPS {
@@ -279,10 +287,13 @@ fn draw_exercises(app: &mut App, ui: &mut Ui) {
                     });
             });
             ui.horizontal(|ui| {
-                ui.label(RichText::new("メモ:").size(12.0).color(MUTED));
+                ui.add_sized(
+                    [LABEL_WIDTH, ui.spacing().interact_size.y],
+                    egui::Label::new(RichText::new("メモ:").size(12.0).color(MUTED)),
+                );
                 ui.add(
                     egui::TextEdit::singleline(notes)
-                        .desired_width(200.0)
+                        .desired_width(400.0)
                         .hint_text("任意"),
                 );
             });
@@ -293,7 +304,10 @@ fn draw_exercises(app: &mut App, ui: &mut Ui) {
                     if primary_button(ui, "保存").clicked() {
                         app.save_exercise_edit();
                     }
-                    if ui.button(RichText::new("キャンセル").size(12.0).color(MUTED)).clicked() {
+                    if ui.add(
+                        egui::Button::new(RichText::new("キャンセル").size(12.0).color(MUTED))
+                            .min_size(egui::vec2(96.0, ui.spacing().interact_size.y)),
+                    ).clicked() {
                         app.editing_exercise = None;
                     }
                 } else {

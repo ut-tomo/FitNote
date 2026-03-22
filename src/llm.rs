@@ -22,6 +22,41 @@ const GEMINI_ENDPOINT: &str =
 /// - HTTP リクエストが失敗した場合
 /// - レスポンスのパースに失敗した場合
 pub fn generate_weekly_report(prompt: &str) -> Result<String> {
+    generate_text(prompt, 1024)
+}
+
+/// トレーニングメモを、週次評価に使いやすい短い要約へ変換する。
+pub fn summarize_training_memos(entries: &[(String, String)]) -> Result<Vec<(String, String)>> {
+    if entries.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut prompt = String::from(
+        "以下は筋トレ日の自由メモです。各日の内容を、週次の評価に使いやすい客観的で短い日本語に要約してください。\n\
+         助言や励ましは不要です。パフォーマンスに関する情報は落とさずに内容を圧縮するようにしてください。出力は'YYYY-MM-DD: 要約'という形で
+         冒頭にタイムスタンプをつけるようにしてください。\n\n",
+    );
+
+    for (date, memo) in entries {
+        prompt.push_str(&format!("{}: {}\n", date, memo.trim()));
+    }
+
+    let text = generate_text(&prompt, 512)?;
+    let mut result = Vec::new();
+
+    for line in text.lines() {
+        let Some((date, summary)) = line.split_once(':') else { continue; };
+        let date = date.trim().to_string();
+        let summary = summary.trim().to_string();
+        if !date.is_empty() && !summary.is_empty() {
+            result.push((date, summary));
+        }
+    }
+
+    Ok(result)
+}
+
+fn generate_text(prompt: &str, max_output_tokens: u32) -> Result<String> {
     let api_key = std::env::var("GEMINI_API_KEY")
         .map_err(|_| anyhow!("GEMINI_API_KEY が設定されていません。.env ファイルを確認してください。"))?;
 
@@ -37,7 +72,7 @@ pub fn generate_weekly_report(prompt: &str) -> Result<String> {
             "parts": [{ "text": prompt }]
         }],
         "generationConfig": {
-            "maxOutputTokens": 1024
+            "maxOutputTokens": max_output_tokens
         }
     });
 

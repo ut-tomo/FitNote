@@ -7,18 +7,23 @@ use chrono::{Datelike, Local};
 use egui::Context;
 
 use crate::db::Db;
-use crate::domain::{DaySummary, Exercise, ExerciseDraft, FoodDraft, FoodItem, LoggedItem, ReportHistory, Slot, Summary, TrainingSession, TrainingSet};
+use crate::domain::{DaySummary, Exercise, ExerciseDraft, FoodDraft, FoodItem, LoggedItem, MealTemplate, MealTemplateDraftItem, ReportHistory, Slot, Summary, TrainingSession, TrainingSet};
 
 // ── 画面識別子 ────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
-    Today,
-    Foods,
+    Meals,
     Graph,
     Training,
     Report,
     Settings,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MealSubScreen {
+    Today,
+    Foods,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,6 +38,7 @@ pub enum TrainingSubScreen {
 
 pub struct App {
     pub screen: Screen,
+    pub meal_sub: MealSubScreen,
     pub today: String,
     pub is_sunday: bool,
 
@@ -50,6 +56,9 @@ pub struct App {
     pub food_filter: String,
     pub new_food: FoodDraft,
     pub editing_food: Option<(i64, FoodDraft)>,
+    pub meal_templates: Vec<MealTemplate>,
+    pub new_meal_template_name: String,
+    pub new_meal_template_items: Vec<MealTemplateDraftItem>,
 
     // ── グラフスクリーン ────────────────────────────────────────────────────
     pub weight_history: Vec<(String, f64)>,
@@ -138,6 +147,7 @@ impl App {
         let weekly_days     = db.get_weekly_summaries().unwrap_or_default();
         let report_history  = db.get_report_history().unwrap_or_default();
         let exercise_list   = db.list_exercises().unwrap_or_default();
+        let meal_templates  = db.list_meal_templates().unwrap_or_default();
 
         // 今日のトレーニングセッション（存在する場合のみ読み込む）
         let (training_session_id, session_memo, session_sets) =
@@ -151,10 +161,11 @@ impl App {
 
         let training_history = db.get_training_history(30).unwrap_or_default();
 
-        let screen = if is_sunday { Screen::Report } else { Screen::Today };
+        let screen = if is_sunday { Screen::Report } else { Screen::Meals };
 
         App {
             screen,
+            meal_sub: MealSubScreen::Today,
             today,
             is_sunday,
             weight_input,
@@ -168,6 +179,9 @@ impl App {
             food_filter: String::new(),
             new_food: FoodDraft::default(),
             editing_food: None,
+            meal_templates,
+            new_meal_template_name: String::new(),
+            new_meal_template_items: vec![MealTemplateDraftItem::default()],
             weight_history,
             graph_range: 30,
             weekly_days,
@@ -223,6 +237,10 @@ impl App {
 
     pub fn refresh_foods(&mut self) {
         self.food_list = self.db.list_foods().unwrap_or_default();
+    }
+
+    pub fn refresh_meal_templates(&mut self) {
+        self.meal_templates = self.db.list_meal_templates().unwrap_or_default();
     }
 
     pub fn refresh_weight(&mut self) {
@@ -315,6 +333,79 @@ impl App {
         }
     }
 
+    pub fn add_meal_template_row(&mut self) {
+        self.new_meal_template_items.push(MealTemplateDraftItem::default());
+    }
+
+    pub fn save_meal_template(&mut self) {
+        let name = self.new_meal_template_name.trim().to_string();
+        if name.is_empty() {
+            self.toast("ショートカット名を入力してください");
+            return;
+        }
+
+        let mut items: Vec<(i64, f64)> = Vec::new();
+        for row in &self.new_meal_template_items {
+            let food_id = match row.food_id {
+                Some(id) => id,
+                None => continue,
+            };
+            let amount = match row.amount.trim().parse::<f64>() {
+                Ok(v) if v > 0.0 => v,
+                _ => {
+                    self.toast("ショートカット内の量は 0 より大きくしてください");
+                    return;
+                }
+            };
+            items.push((food_id, amount));
+        }
+
+        if items.is_empty() {
+            self.toast("ショートカットに食材を 1 つ以上入れてください");
+            return;
+        }
+
+        match self.db.add_meal_template(&name, &items) {
+            Ok(()) => {
+                self.new_meal_template_name.clear();
+                self.new_meal_template_items = vec![MealTemplateDraftItem::default()];
+                self.refresh_meal_templates();
+                self.toast(format!("ショートカット「{}」を登録しました", name));
+            }
+            Err(e) => self.toast(format!("エラー: {}", e)),
+        }
+    }
+
+    pub fn apply_meal_template(&mut self, template_id: i64) {
+        let Some(template) = self.meal_templates.iter().find(|t| t.id == template_id).cloned() else {
+            self.toast("ショートカットが見つかりません");
+            return;
+        };
+
+        let slot = self.active_slot;
+        let today = self.today.clone();
+        match self.db.get_or_create_meal_log(&today, slot) {
+            Ok(meal_id) => match self.db.add_meal_template_to_log(meal_id, template_id) {
+                Ok(()) => {
+                    self.refresh_today();
+                    self.toast(format!("「{}」を追加しました", template.name));
+                }
+                Err(e) => self.toast(format!("エラー: {}", e)),
+            },
+            Err(e) => self.toast(format!("エラー: {}", e)),
+        }
+    }
+
+    pub fn delete_meal_template(&mut self, id: i64) {
+        match self.db.delete_meal_template(id) {
+            Ok(()) => {
+                self.refresh_meal_templates();
+                self.toast("ショートカットを削除しました");
+            }
+            Err(e) => self.toast(format!("エラー: {}", e)),
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════════════
     // ビジネスロジック：食品マスタ
     // ════════════════════════════════════════════════════════════════════════
@@ -330,6 +421,7 @@ impl App {
                 self.toast(format!("「{}」を登録しました", draft.name));
                 self.new_food = FoodDraft::default();
                 self.refresh_foods();
+                self.refresh_meal_templates();
             }
             Err(e) => self.toast(format!("エラー: {}", e)),
         }
@@ -338,18 +430,26 @@ impl App {
     pub fn save_food_edit(&mut self) {
         if let Some((id, draft)) = self.editing_food.take() {
             match self.db.update_food(id, &draft) {
-                Ok(()) => { self.toast("更新しました"); self.refresh_foods(); }
+                Ok(()) => {
+                    self.toast("更新しました");
+                    self.refresh_foods();
+                    self.refresh_meal_templates();
+                }
                 Err(e) => {
                     self.editing_food = Some((id, draft));
                     self.toast(format!("エラー: {}", e));
-                }
+            }
             }
         }
     }
 
     pub fn delete_food(&mut self, id: i64) {
         match self.db.delete_food(id) {
-            Ok(()) => { self.toast("食品を削除しました"); self.refresh_foods(); }
+            Ok(()) => {
+                self.toast("食品を削除しました");
+                self.refresh_foods();
+                self.refresh_meal_templates();
+            }
             Err(e) => self.toast(format!("エラー: {}", e)),
         }
     }
@@ -504,46 +604,91 @@ impl App {
             return;
         }
 
-        let prompt = self.build_llm_prompt();
+        let target_kcal = self.target_kcal;
+        let weekly_days = self.weekly_days.clone();
+        let weight_history = self.weight_history.clone();
+        let training_summary = self.db.get_weekly_training_summary().unwrap_or_default();
         let (tx, rx) = mpsc::channel();
         self.report_rx      = Some(rx);
         self.report_loading = true;
         self.report_text    = None;
 
         std::thread::spawn(move || {
+            let memo_entries: Vec<(String, String)> = training_summary
+                .iter()
+                .filter_map(|(date, _, _, memo)| {
+                    let memo = memo.trim();
+                    if memo.is_empty() {
+                        None
+                    } else {
+                        Some((date.clone(), memo.to_string()))
+                    }
+                })
+                .collect();
+
+            let compressed_map = crate::llm::summarize_training_memos(&memo_entries)
+                .unwrap_or_default()
+                .into_iter()
+                .collect::<std::collections::HashMap<_, _>>();
+
+            let compressed_training_summary = training_summary
+                .into_iter()
+                .map(|(date, sets, volume, memo)| {
+                    let compressed = compressed_map.get(&date).cloned().unwrap_or(memo);
+                    (date, sets, volume, compressed)
+                })
+                .collect::<Vec<_>>();
+
+            let prompt = App::build_llm_prompt(
+                target_kcal,
+                &weekly_days,
+                &weight_history,
+                &compressed_training_summary,
+            );
+
             let _ = tx.send(crate::llm::generate_weekly_report(&prompt));
         });
     }
 
-    fn build_llm_prompt(&self) -> String {
+    fn build_llm_prompt(
+        target_kcal: f64,
+        weekly_days: &[DaySummary],
+        weight_history: &[(String, f64)],
+        training_summary: &[(String, i32, f64, String)],
+    ) -> String {
         let mut prompt = format!(
             "あなたはダイエット＆筋トレコーチです。以下の直近7日間の食事・体重・トレーニングデータを分析し、\
              日本語で総評・良かった点・改善点・来週へのアドバイスを400〜500字でまとめてください。\n\n\
              目標摂取カロリー: {:.0} kcal/日\n\n食事記録:\n",
-            self.target_kcal
+            target_kcal
         );
 
-        for day in &self.weekly_days {
+        for day in weekly_days {
             prompt.push_str(&format!(
                 "  {}: {:.0} kcal (P {:.0}g / F {:.0}g / C {:.0}g)\n",
                 day.date, day.kcal, day.p, day.f, day.c
             ));
         }
 
-        if !self.weight_history.is_empty() {
+        if !weight_history.is_empty() {
             prompt.push_str("\n体重記録 (直近7日):\n");
-            for (date, kg) in self.weight_history.iter().rev().take(7).rev() {
+            for (date, kg) in weight_history.iter().rev().take(7).rev() {
                 prompt.push_str(&format!("  {}: {:.1} kg\n", date, kg));
             }
         }
 
-        if let Ok(training_summary) = self.db.get_weekly_training_summary() {
-            if !training_summary.is_empty() {
-                prompt.push_str("\nトレーニング記録 (直近7日):\n");
-                for (date, sets, volume) in &training_summary {
+        if !training_summary.is_empty() {
+            prompt.push_str("\nトレーニング記録 (直近7日):\n");
+            for (date, sets, volume, memo) in training_summary {
+                if memo.trim().is_empty() {
                     prompt.push_str(&format!(
                         "  {}: {}セット, 総ボリューム {:.0}kg\n",
                         date, sets, volume
+                    ));
+                } else {
+                    prompt.push_str(&format!(
+                        "  {}: {}セット, 総ボリューム {:.0}kg, メモ: {}\n",
+                        date, sets, volume, memo.trim()
                     ));
                 }
             }

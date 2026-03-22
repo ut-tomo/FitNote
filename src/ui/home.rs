@@ -12,6 +12,8 @@ use crate::app::App;
 use crate::domain::Slot;
 use crate::ui::{card, nutrient_bar, primary_button, ACCENT, C_COLOR, F_COLOR, KCAL_COLOR, MUTED, P_COLOR, TEXT_DARK};
 
+const SLOT_BUTTON_SIZE: [f32; 2] = [88.0, 40.0];
+
 pub fn draw(app: &mut App, ui: &mut Ui) {
     ScrollArea::vertical().show(ui, |ui| {
         ui.add_space(4.0);
@@ -26,6 +28,9 @@ pub fn draw(app: &mut App, ui: &mut Ui) {
         ui.add_space(8.0);
 
         draw_summary_card(app, ui);
+        ui.add_space(8.0);
+
+        draw_template_card(app, ui);
         ui.add_space(8.0);
 
         draw_log_card(app, ui);
@@ -104,6 +109,55 @@ fn draw_log_card(app: &mut App, ui: &mut Ui) {
     });
 }
 
+fn draw_template_card(app: &mut App, ui: &mut Ui) {
+    if app.meal_templates.is_empty() {
+        return;
+    }
+
+    let templates = app.meal_templates.clone();
+    card(ui, |ui| {
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("食事ショートカット").size(13.0).strong().color(TEXT_DARK));
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.label(
+                    RichText::new(format!("追加先: {}", app.active_slot.label()))
+                        .size(11.0)
+                        .color(MUTED),
+                );
+            });
+        });
+        ui.add_space(6.0);
+
+        for template in templates {
+            egui::Frame::none()
+                .fill(Color32::from_rgb(246, 247, 248))
+                .rounding(egui::Rounding::same(8.0))
+                .inner_margin(egui::Margin::same(8.0))
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(&template.name).size(12.0).strong().color(TEXT_DARK));
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if primary_button(ui, "このスロットに追加").clicked() {
+                                app.apply_meal_template(template.id);
+                            }
+                        });
+                    });
+                    ui.label(
+                        RichText::new(
+                            template.items.iter()
+                                .map(|item| format!("{} {}{}", item.food_name, item.amount, item.unit.as_str()))
+                                .collect::<Vec<_>>()
+                                .join(" / "),
+                        )
+                        .size(11.0)
+                        .color(MUTED),
+                    );
+                });
+            ui.add_space(4.0);
+        }
+    });
+}
+
 fn draw_slot_selector(app: &mut App, ui: &mut Ui) {
     ui.horizontal(|ui| {
         for slot in Slot::all() {
@@ -119,7 +173,8 @@ fn draw_slot_selector(app: &mut App, ui: &mut Ui) {
                 } else {
                     Color32::from_rgb(232, 235, 238)
                 })
-                .rounding(egui::Rounding::same(20.0)),
+                .rounding(egui::Rounding::same(20.0))
+                .min_size(egui::vec2(SLOT_BUTTON_SIZE[0], 36.0)),
             );
             if btn.clicked() {
                 app.active_slot = slot;
@@ -132,17 +187,34 @@ fn draw_slot_selector(app: &mut App, ui: &mut Ui) {
 fn draw_food_grid(app: &mut App, ui: &mut Ui) {
     // 検索ボックス
     ui.horizontal(|ui| {
-        ui.label(RichText::new("🔍").size(13.0));
-        ui.add(
+        let field_width = if app.food_search.is_empty() {
+            ui.available_width()
+        } else {
+            (ui.available_width() - 34.0).max(120.0)
+        };
+
+        let resp = ui.add_sized(
+            [field_width, ui.spacing().interact_size.y],
             egui::TextEdit::singleline(&mut app.food_search)
-                .desired_width(200.0)
                 .hint_text("食材を検索..."),
         );
+
         if !app.food_search.is_empty() {
-            if ui.small_button("✕").clicked() {
+            if ui
+                .add_sized(
+                    [28.0, ui.spacing().interact_size.y],
+                    egui::Button::new(RichText::new("✕").size(11.0).color(MUTED))
+                        .min_size(egui::vec2(28.0, ui.spacing().interact_size.y)),
+                )
+                .clicked()
+            {
                 app.food_search.clear();
                 app.selected_food = None;
             }
+        }
+
+        if resp.changed() && app.food_search.is_empty() {
+            app.selected_food = None;
         }
     });
     ui.add_space(6.0);

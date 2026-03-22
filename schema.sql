@@ -15,6 +15,20 @@ CREATE TABLE IF NOT EXISTS food_item (
   c_per_unit     REAL    NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS meal_template (
+  id   INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT    NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS meal_template_item (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  template_id  INTEGER NOT NULL,
+  food_item_id INTEGER NOT NULL,
+  amount       REAL    NOT NULL,
+  FOREIGN KEY (template_id)  REFERENCES meal_template(id) ON DELETE CASCADE,
+  FOREIGN KEY (food_item_id) REFERENCES food_item(id)     ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS meal_log (
   id   INTEGER PRIMARY KEY AUTOINCREMENT,
   date TEXT    NOT NULL,

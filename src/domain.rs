@@ -194,6 +194,29 @@ impl FoodDraft {
     pub fn c_f(&self)    -> f64 { self.c.parse().unwrap_or(0.0) }
 }
 
+/// 食事ショートカットを構成する 1 食材分。
+#[derive(Debug, Clone)]
+pub struct MealTemplateItem {
+    pub food_name: String,
+    pub unit: Unit,
+    pub amount: f64,
+}
+
+/// 「おでん」など複数食材を束ねた食事ショートカット。
+#[derive(Debug, Clone)]
+pub struct MealTemplate {
+    pub id: i64,
+    pub name: String,
+    pub items: Vec<MealTemplateItem>,
+}
+
+/// 食事ショートカット作成フォームの 1 行。
+#[derive(Debug, Clone, Default)]
+pub struct MealTemplateDraftItem {
+    pub food_id: Option<i64>,
+    pub amount: String,
+}
+
 // ── ログ済み食事アイテム ──────────────────────────────────────────────────────
 
 /// meal_log_item + food_item を JOIN して取得した 1 食品エントリ。

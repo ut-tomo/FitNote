@@ -7,7 +7,7 @@ pub mod report;
 pub mod settings;
 pub mod training;
 
-use crate::app::{App, Screen};
+use crate::app::{App, MealSubScreen, Screen};
 use egui::{Color32, Context, RichText};
 
 // ── グレースケールパレット ───────────────────────────────────────────────────
@@ -29,8 +29,7 @@ pub fn draw(app: &mut App, ctx: &Context) {
 
     egui::CentralPanel::default().show(ctx, |ui| {
         match app.screen {
-            Screen::Today    => home::draw(app, ui),
-            Screen::Foods    => foods::draw(app, ui),
+            Screen::Meals    => draw_meal_screen(app, ui),
             Screen::Graph    => graph::draw(app, ui),
             Screen::Training => training::draw(app, ui),
             Screen::Report   => report::draw(app, ui),
@@ -72,8 +71,7 @@ fn draw_tab_bar(app: &mut App, ctx: &Context) {
         )
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
-                tab_button(ui, app, Screen::Today,    " 今日 ");
-                tab_button(ui, app, Screen::Foods,    " 食品 ");
+                tab_button(ui, app, Screen::Meals,    " 食事 ");
                 tab_button(ui, app, Screen::Graph,    "グラフ");
                 tab_button(ui, app, Screen::Training, "筋トレ");
                 tab_button(ui, app, Screen::Report,   "レポート");
@@ -102,6 +100,46 @@ fn tab_button(ui: &mut egui::Ui, app: &mut App, screen: Screen, label: &str) {
 
     if btn.clicked() {
         app.screen = screen;
+    }
+}
+
+fn draw_meal_screen(app: &mut App, ui: &mut egui::Ui) {
+    draw_meal_sub_tab_bar(app, ui);
+    ui.add_space(4.0);
+
+    match app.meal_sub {
+        MealSubScreen::Today => home::draw(app, ui),
+        MealSubScreen::Foods => foods::draw(app, ui),
+    }
+}
+
+fn draw_meal_sub_tab_bar(app: &mut App, ui: &mut egui::Ui) {
+    ui.horizontal(|ui| {
+        meal_sub_tab_btn(ui, app, MealSubScreen::Today, "今日");
+        meal_sub_tab_btn(ui, app, MealSubScreen::Foods, "食材管理");
+    });
+    ui.separator();
+}
+
+fn meal_sub_tab_btn(ui: &mut egui::Ui, app: &mut App, screen: MealSubScreen, label: &str) {
+    let is_active = app.meal_sub == screen;
+    let color = if is_active { ACCENT } else { MUTED };
+    let btn = ui.add(
+        egui::Button::new(RichText::new(label).size(12.0).color(color))
+            .fill(Color32::TRANSPARENT)
+            .stroke(egui::Stroke::NONE),
+    );
+
+    if is_active {
+        let r = btn.rect;
+        ui.painter().line_segment(
+            [egui::pos2(r.left(), r.bottom()), egui::pos2(r.right(), r.bottom())],
+            egui::Stroke::new(2.0, ACCENT),
+        );
+    }
+
+    if btn.clicked() {
+        app.meal_sub = screen;
     }
 }
 

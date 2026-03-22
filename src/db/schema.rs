@@ -8,13 +8,14 @@
 //! - v1: 古いバージョン → 全DROP+再作成
 //! - v2→v3: report_history テーブルのみ追加（既存データは保持）
 //! - v3→v4: exercise / training_session / training_set テーブル追加（既存データ保持）
-//! - v4: 最新 → 何もしない
+//! - v4→v5: meal_template / meal_template_item テーブル追加（既存データ保持）
+//! - v5: 最新 → 何もしない
 
 use crate::domain::Result;
 use rusqlite::Connection;
 
 /// 現在のスキーマバージョン。変更時はインクリメントする。
-const DB_VERSION: i64 = 4;
+const DB_VERSION: i64 = 5;
 
 /// `schema.sql` をコンパイル時にバイナリへ埋め込む（初回インストール用）。
 const SCHEMA_SQL: &str = include_str!("../../schema.sql");
@@ -55,6 +56,23 @@ CREATE TABLE IF NOT EXISTS training_set (
 );
 ";
 
+/// v4→v5 の差分マイグレーション SQL（既存データを保持）。
+const V5_MIGRATION_SQL: &str = "
+CREATE TABLE IF NOT EXISTS meal_template (
+  id   INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT    NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS meal_template_item (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  template_id  INTEGER NOT NULL,
+  food_item_id INTEGER NOT NULL,
+  amount       REAL    NOT NULL,
+  FOREIGN KEY (template_id)  REFERENCES meal_template(id) ON DELETE CASCADE,
+  FOREIGN KEY (food_item_id) REFERENCES food_item(id)     ON DELETE CASCADE
+);
+";
+
 /// DB を初期化する。バージョンに応じてマイグレーションを選択する。
 pub fn init_db(conn: &Connection) -> Result<()> {
     // settings テーブルはバージョン確認に必要なので必ず先に作る
@@ -84,6 +102,10 @@ pub fn init_db(conn: &Connection) -> Result<()> {
     } else if saved_version == 3 {
         // v3→v4: exercise / training_session / training_set テーブル追加（既存データ保持）
         conn.execute_batch(V4_MIGRATION_SQL)?;
+        conn.execute_batch(V5_MIGRATION_SQL)?;
+    } else if saved_version == 4 {
+        // v4→v5: meal_template / meal_template_item テーブル追加（既存データ保持）
+        conn.execute_batch(V5_MIGRATION_SQL)?;
     }
     // saved_version == DB_VERSION の場合は何もしない
 

@@ -13,6 +13,8 @@ use crate::app::App;
 use crate::domain::{FoodDraft, Unit};
 use crate::ui::{card, primary_button, MUTED, TEXT_DARK};
 
+const LABEL_WIDTH: f32 = 56.0;
+
 /// 食品管理スクリーン全体を描画する。
 pub fn draw(app: &mut App, ui: &mut Ui) {
     ScrollArea::vertical().show(ui, |ui| {
@@ -22,6 +24,9 @@ pub fn draw(app: &mut App, ui: &mut Ui) {
         ui.add_space(10.0);
 
         draw_food_list_card(app, ui);
+        ui.add_space(10.0);
+
+        draw_meal_template_card(app, ui);
         ui.add_space(8.0);
     });
 }
@@ -56,9 +61,13 @@ fn draw_form_card(app: &mut App, ui: &mut Ui) {
 /// 食品名の入力行。
 fn draw_name_row(ui: &mut Ui, draft: &mut FoodDraft) {
     ui.horizontal(|ui| {
-        ui.label(RichText::new("名前").color(MUTED).size(12.0).strong());
+        ui.add_sized(
+            [LABEL_WIDTH, ui.spacing().interact_size.y],
+            egui::Label::new(RichText::new("名前").color(MUTED).size(12.0).strong()),
+        );
         ui.add(
-            egui::TextEdit::singleline(&mut draft.name).desired_width(200.0),
+            egui::TextEdit::singleline(&mut draft.name)
+                .desired_width(260.0),
         );
     });
 }
@@ -66,8 +75,12 @@ fn draw_name_row(ui: &mut Ui, draft: &mut FoodDraft) {
 /// 計量単位の ComboBox 選択行。
 fn draw_unit_row(ui: &mut Ui, draft: &mut FoodDraft) {
     ui.horizontal(|ui| {
-        ui.label(RichText::new("単位").color(MUTED).size(12.0).strong());
+        ui.add_sized(
+            [LABEL_WIDTH, ui.spacing().interact_size.y],
+            egui::Label::new(RichText::new("単位").color(MUTED).size(12.0).strong()),
+        );
         egui::ComboBox::from_id_salt("unit_combo")
+            .width(120.0)
             .selected_text(draft.unit.as_str())
             .show_ui(ui, |ui| {
                 for unit in Unit::all() {
@@ -102,7 +115,8 @@ fn draw_form_buttons(app: &mut App, ui: &mut Ui, is_editing: bool) {
             if ui
                 .add(
                     egui::Button::new(RichText::new("キャンセル").size(12.0).color(MUTED))
-                        .fill(Color32::from_rgb(240, 232, 248))
+                        .fill(Color32::from_rgb(232, 235, 238))
+                        .stroke(egui::Stroke::new(0.5, Color32::from_rgb(213, 217, 221)))
                         .rounding(egui::Rounding::same(8.0)),
                 )
                 .clicked()
@@ -211,6 +225,128 @@ fn draw_food_list_card(app: &mut App, ui: &mut Ui) {
         if let Some(id) = edit_id {
             if let Some(food) = app.food_list.iter().find(|f| f.id == id) {
                 app.editing_food = Some((id, FoodDraft::from_item(food)));
+            }
+        }
+    });
+}
+
+fn draw_meal_template_card(app: &mut App, ui: &mut Ui) {
+    card(ui, |ui| {
+        ui.label(RichText::new("食事ショートカット").size(13.0).strong().color(TEXT_DARK));
+        ui.add_space(4.0);
+        ui.label(
+            RichText::new("例: おでん = 鶏肉 120g + 大根 150g のように保存")
+                .size(11.0)
+                .color(MUTED),
+        );
+        ui.add_space(8.0);
+
+        ui.horizontal(|ui| {
+            ui.add_sized(
+                [LABEL_WIDTH, ui.spacing().interact_size.y],
+                egui::Label::new(RichText::new("名前").color(MUTED).size(12.0).strong()),
+            );
+            ui.add(
+                egui::TextEdit::singleline(&mut app.new_meal_template_name)
+                    .desired_width(220.0)
+                    .hint_text("おでん"),
+            );
+        });
+
+        ui.add_space(6.0);
+        ui.label(RichText::new("構成食材").size(11.0).color(MUTED));
+        ui.add_space(4.0);
+
+        let mut remove_idx: Option<usize> = None;
+        for (idx, row) in app.new_meal_template_items.iter_mut().enumerate() {
+            ui.horizontal(|ui| {
+                egui::ComboBox::from_id_salt(("meal_template_food", idx))
+                    .width(180.0)
+                    .selected_text(
+                        row.food_id
+                            .and_then(|id| app.food_list.iter().find(|f| f.id == id).map(|f| f.name.clone()))
+                            .unwrap_or_else(|| "食材を選択".to_string()),
+                    )
+                    .show_ui(ui, |ui| {
+                        for food in &app.food_list {
+                            ui.selectable_value(&mut row.food_id, Some(food.id), &food.name);
+                        }
+                    });
+
+                ui.add(
+                    egui::TextEdit::singleline(&mut row.amount)
+                        .desired_width(70.0)
+                        .hint_text("100"),
+                );
+
+                let unit = row.food_id
+                    .and_then(|id| app.food_list.iter().find(|f| f.id == id))
+                    .map(|f| f.unit.as_str())
+                    .unwrap_or("g");
+                ui.label(RichText::new(unit).size(11.0).color(MUTED));
+
+                if ui.small_button("削除").clicked() {
+                    remove_idx = Some(idx);
+                }
+            });
+            ui.add_space(2.0);
+        }
+
+        if let Some(idx) = remove_idx {
+            app.new_meal_template_items.remove(idx);
+            if app.new_meal_template_items.is_empty() {
+                app.add_meal_template_row();
+            }
+        }
+
+        ui.horizontal(|ui| {
+            if ui.button(RichText::new("+ 行を追加").size(11.0).color(MUTED)).clicked() {
+                app.add_meal_template_row();
+            }
+            if primary_button(ui, "ショートカットを保存").clicked() {
+                app.save_meal_template();
+            }
+        });
+
+        if !app.meal_templates.is_empty() {
+            ui.add_space(10.0);
+            ui.separator();
+            ui.add_space(6.0);
+            ui.label(RichText::new("登録済みショートカット").size(12.0).strong().color(TEXT_DARK));
+            ui.add_space(4.0);
+
+            let templates = app.meal_templates.clone();
+            let mut delete_id: Option<i64> = None;
+            for template in templates {
+                egui::Frame::none()
+                    .fill(Color32::from_rgb(246, 247, 248))
+                    .rounding(egui::Rounding::same(8.0))
+                    .inner_margin(egui::Margin::same(8.0))
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new(&template.name).size(12.0).strong().color(TEXT_DARK));
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                if ui.small_button("削除").clicked() {
+                                    delete_id = Some(template.id);
+                                }
+                            });
+                        });
+                        ui.label(
+                            RichText::new(
+                                template.items.iter()
+                                    .map(|item| format!("{} {}{}", item.food_name, item.amount, item.unit.as_str()))
+                                    .collect::<Vec<_>>()
+                                    .join(" / "),
+                            )
+                            .size(11.0)
+                            .color(MUTED),
+                        );
+                    });
+                ui.add_space(4.0);
+            }
+
+            if let Some(id) = delete_id {
+                app.delete_meal_template(id);
             }
         }
     });

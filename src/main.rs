@@ -35,8 +35,8 @@ fn main() -> eframe::Result {
 
 fn setup_fonts(ctx: &egui::Context) {
     let japanese_font_candidates = [
-        "/System/Library/Fonts/Hiragino Sans GB.ttc",
         "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
+        "/System/Library/Fonts/Hiragino Sans GB.ttc",
         "/Library/Fonts/Arial Unicode MS.ttf",
     ];
 
@@ -45,8 +45,8 @@ fn setup_fonts(ctx: &egui::Context) {
     for path in &japanese_font_candidates {
         if let Ok(data) = std::fs::read(path) {
             fonts.font_data.insert("cjk".to_owned(), egui::FontData::from_owned(data));
-            for family in fonts.families.values_mut() {
-                family.push("cjk".to_owned());
+            if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
+                family.insert(0, "cjk".to_owned());
             }
             break;
         }

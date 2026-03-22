@@ -13,7 +13,7 @@
 pub mod schema;
 pub mod seed;
 
-use crate::domain::{DaySummary, Exercise, ExerciseDraft, FoodDraft, FoodItem, LoggedItem, ReportHistory, Result, Slot, Summary, TrainingSession, TrainingSet, Unit};
+use crate::domain::{DaySummary, Exercise, ExerciseDraft, FoodDraft, FoodItem, LoggedItem, MealTemplate, MealTemplateItem, ReportHistory, Result, Slot, Summary, TrainingSession, TrainingSet, Unit};
 use rusqlite::{params, Connection};
 
 /// DB 接続を保持し、アプリ全体で共有される。
@@ -124,6 +124,93 @@ impl Db {
     /// 食品を削除する。関連する meal_log_item も CASCADE で削除される。
     pub fn delete_food(&self, id: i64) -> Result<()> {
         self.conn.execute("DELETE FROM food_item WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    /// 登録済みの食事ショートカットを取得する。
+    pub fn list_meal_templates(&self) -> Result<Vec<MealTemplate>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT mt.id, mt.name, fi.id, fi.name, fi.unit, mti.amount
+             FROM meal_template mt
+             LEFT JOIN meal_template_item mti ON mti.template_id = mt.id
+             LEFT JOIN food_item fi ON fi.id = mti.food_item_id
+             ORDER BY mt.name COLLATE NOCASE, mti.id",
+        )?;
+
+        let rows = stmt
+            .query_map([], |r| {
+                Ok((
+                    r.get::<_, i64>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, Option<i64>>(2)?,
+                    r.get::<_, Option<String>>(3)?,
+                    r.get::<_, Option<String>>(4)?,
+                    r.get::<_, Option<f64>>(5)?,
+                ))
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+
+        let mut templates: Vec<MealTemplate> = Vec::new();
+        for (template_id, template_name, food_id, food_name, food_unit, amount) in rows {
+            let needs_new = templates
+                .last()
+                .map(|t| t.id != template_id)
+                .unwrap_or(true);
+            if needs_new {
+                templates.push(MealTemplate {
+                    id: template_id,
+                    name: template_name,
+                    items: Vec::new(),
+                });
+            }
+
+            if let (Some(_food_id), Some(food_name), Some(food_unit), Some(amount)) =
+                (food_id, food_name, food_unit, amount)
+            {
+                templates.last_mut().unwrap().items.push(MealTemplateItem {
+                    food_name,
+                    unit: Unit::from_str(&food_unit),
+                    amount,
+                });
+            }
+        }
+
+        Ok(templates)
+    }
+
+    /// 食事ショートカットを保存する。
+    pub fn add_meal_template(&self, name: &str, items: &[(i64, f64)]) -> Result<()> {
+        let tx = self.conn.unchecked_transaction()?;
+        tx.execute("INSERT INTO meal_template (name) VALUES (?1)", [name])?;
+        let template_id = tx.last_insert_rowid();
+
+        for (food_id, amount) in items {
+            tx.execute(
+                "INSERT INTO meal_template_item (template_id, food_item_id, amount)
+                 VALUES (?1, ?2, ?3)",
+                params![template_id, food_id, amount],
+            )?;
+        }
+
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// 食事ショートカットを削除する。
+    pub fn delete_meal_template(&self, id: i64) -> Result<()> {
+        self.conn.execute("DELETE FROM meal_template WHERE id = ?1", [id])?;
+        Ok(())
+    }
+
+    /// 食事ショートカットの構成食材を meal_log にまとめて追加する。
+    pub fn add_meal_template_to_log(&self, meal_log_id: i64, template_id: i64) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO meal_log_item (meal_log_id, food_item_id, amount)
+             SELECT ?1, food_item_id, amount
+             FROM meal_template_item
+             WHERE template_id = ?2",
+            params![meal_log_id, template_id],
+        )?;
         Ok(())
     }
 
@@ -512,19 +599,27 @@ impl Db {
     }
 
     /// 週次トレーニングサマリを返す（AIプロンプト用）。
-    /// (date, total_sets, total_volume)
-    pub fn get_weekly_training_summary(&self) -> Result<Vec<(String, i32, f64)>> {
+    /// (date, total_sets, total_volume, memo)
+    pub fn get_weekly_training_summary(&self) -> Result<Vec<(String, i32, f64, String)>> {
         let mut stmt = self.conn.prepare(
-            "SELECT ts.date, COUNT(t.id), COALESCE(SUM(t.reps * t.weight_kg), 0)
+            "SELECT ts.date,
+                    COUNT(t.id),
+                    COALESCE(SUM(t.reps * t.weight_kg), 0),
+                    ts.memo
              FROM training_session ts
              LEFT JOIN training_set t ON t.session_id = ts.id
              WHERE ts.date >= date('now', '-6 days')
-             GROUP BY ts.date
+             GROUP BY ts.id, ts.date, ts.memo
              ORDER BY ts.date",
         )?;
         let items = stmt
             .query_map([], |r| {
-                Ok((r.get::<_, String>(0)?, r.get::<_, i32>(1)?, r.get::<_, f64>(2)?))
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, i32>(1)?,
+                    r.get::<_, f64>(2)?,
+                    r.get::<_, String>(3)?,
+                ))
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         Ok(items)
